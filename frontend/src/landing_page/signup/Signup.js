@@ -1,10 +1,8 @@
+
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
 function Signup() {
-  const navigate = useNavigate();
-
   const [isLogin, setIsLogin] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -18,7 +16,12 @@ function Signup() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const API_URL = "http://localhost:3002/auth";
+  // Deployed Backend URL
+  const API_URL = "https://zerodha-clone-backend-e7mr.onrender.com/auth";
+
+  // Deployed Dashboard URL
+  const DASHBOARD_URL =
+    "https://zerodha-clone-dashboard-c60q.onrender.com";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,27 +72,37 @@ function Signup() {
             password: formData.password,
           };
 
-      const response = await axios.post(`${API_URL}${endpoint}`, payload,{withCredentials: true});
+      const response = await axios.post(
+        `${API_URL}${endpoint}`,
+        payload,
+        {
+          withCredentials: true,
+        }
+      );
 
-      console.log("Login response:", response.data);
-      console.log("Received token:", response.data.token);
-    
-if (isLogin) {
-  sessionStorage.setItem("user", JSON.stringify(response.data.user));
+      console.log("Authentication response:", response.data);
 
-  setSuccess("Login successful! Opening dashboard...");
+      if (isLogin) {
+        // Save user information if returned by the backend.
+        if (response.data.user) {
+          sessionStorage.setItem(
+            "user",
+            JSON.stringify(response.data.user)
+          );
+        }
 
-  setTimeout(() => {
-    window.location.href = "http://localhost:3001";
-  }, 700);
-}
+        setSuccess("Login successful! Opening dashboard...");
 
-      else {
+        // Redirect to the deployed Dashboard.
+        setTimeout(() => {
+          window.location.href = DASHBOARD_URL;
+        }, 700);
+      } else {
         setSuccess("Account created successfully! Please login.");
 
         setFormData({
           name: "",
-          email: "",
+          email: formData.email,
           password: "",
           mobile: "",
         });
@@ -97,9 +110,17 @@ if (isLogin) {
         setIsLogin(true);
       }
     } catch (err) {
+      console.error(
+        "Authentication error:",
+        err.response?.data || err.message
+      );
+
       const message =
         err.response?.data?.message ||
-        "Something went wrong. Please try again.";
+        err.response?.data?.error ||
+        (err.code === "ERR_NETWORK"
+          ? "Cannot connect to the server. Please try again later."
+          : "Something went wrong. Please try again.");
 
       setError(message);
     } finally {
