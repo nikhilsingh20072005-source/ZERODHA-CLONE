@@ -16,7 +16,7 @@ const Menu = () => {
     const fetchUser = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:3002/auth/me",
+          "https://zerodha-clone-backend-e7mr.onrender.com/auth/me",
           {
             withCredentials: true,
           }
@@ -47,7 +47,7 @@ const Menu = () => {
   const handleLogout = async () => {
     try {
       await axios.post(
-        "http://localhost:3002/auth/logout",
+        "https://zerodha-clone-backend-e7mr.onrender.com/auth/logout",
         {},
         {
           withCredentials: true,

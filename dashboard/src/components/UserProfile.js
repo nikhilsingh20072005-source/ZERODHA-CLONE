@@ -7,7 +7,7 @@ function UserProfile() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3002/auth/me", {
+      .get("https://zerodha-clone-backend-e7mr.onrender.com/auth/me", {
         withCredentials: true,
       })
       .then((response) => {
