@@ -17,7 +17,7 @@ function Signup() {
   const [success, setSuccess] = useState("");
 
   // Deployed Backend URL
-  const API_URL = "http://localhost:3002/auth";
+  const API_URL =  "https://zerodha-clone-backend-e7mr.onrender.com/auth";
 
   // Deployed Dashboard URL
   const DASHBOARD_URL =
@@ -83,7 +83,13 @@ function Signup() {
       console.log("Authentication response:", response.data);
 
       if (isLogin) {
+        if (!response.data.token) {
+          setError("Login token nhi mila. Backend login response check karo.");
+          return;
+        }
         // Save user information if returned by the backend.
+        sessionStorage.setItem("token", response.data.token);
+
         if (response.data.user) {
           sessionStorage.setItem(
             "user",
