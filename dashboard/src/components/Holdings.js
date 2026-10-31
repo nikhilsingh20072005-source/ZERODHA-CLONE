@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { VerticalGraph } from "./VerticalGraph";
 
-const API_URL = "http://localhost:3002";
+const API_URL = "https://zerodha-clone-backend-e7mr.onrender.com";
 
 const Holdings = () => {
   const [allHoldings, setAllHoldings] = useState([]);
@@ -14,8 +14,13 @@ const Holdings = () => {
 
     const fetchHoldings = async () => {
       try {
+        const token = localStorage.getItem("token");
+
         const response = await axios.get(`${API_URL}/allHoldings`, {
           withCredentials: true,
+          headers: token
+            ? { Authorization: `Bearer ${token}` }
+            : {},
         });
 
         if (isMounted) {
@@ -30,11 +35,11 @@ const Holdings = () => {
         );
 
         if (isMounted) {
-          setError(
-            err.response?.status === 401
-              ? "Login session nahi mili. Dobara login karo."
-              : "Holdings load nahi hui. Backend aur API URL check karo."
-          );
+          if (err.response?.status === 401) {
+            setError("Login session nahi mili. Logout karke dobara login karo.");
+          } else {
+            setError("Holdings load nahi hui. Backend URL aur connection check karo.");
+          }
         }
       } finally {
         if (isMounted) {
