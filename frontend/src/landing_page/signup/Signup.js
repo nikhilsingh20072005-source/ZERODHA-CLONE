@@ -17,7 +17,7 @@ function Signup() {
   const [success, setSuccess] = useState("");
 
   // Deployed Backend URL
-  const API_URL = "https://zerodha-clone-backend-e7mr.onrender.com/auth";
+  const API_URL = "http://localhost:3002/auth";
 
   // Deployed Dashboard URL
   const DASHBOARD_URL =

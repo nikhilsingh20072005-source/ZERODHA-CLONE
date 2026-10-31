@@ -2,31 +2,57 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { VerticalGraph } from "./VerticalGraph";
 
+const API_URL = "http://localhost:3002";
+
 const Holdings = () => {
   const [allHoldings, setAllHoldings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   useEffect(() => {
-  const fetchHoldings = async () => {
-    try {
-      const response = await axios.get(
-        "https://zerodha-clone-backend-e7mr.onrender.com/allHoldings",
-        {
+    let isMounted = true;
+
+    const fetchHoldings = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/allHoldings`, {
           withCredentials: true,
+        });
+
+        if (isMounted) {
+          setAllHoldings(response.data);
+          setError("");
         }
-      );
+      } catch (err) {
+        console.error(
+          "Holdings API error:",
+          err.response?.status,
+          err.response?.data || err.message
+        );
 
-      console.log("Holdings data:", response.data);
-      setAllHoldings(response.data);
-    } catch (error) {
-      console.error("Holdings status:", error.response?.status);
-      console.error(
-        "Holdings error:",
-        error.response?.data || error.message
-      );
-    }
-  };
+        if (isMounted) {
+          setError(
+            err.response?.status === 401
+              ? "Login session nahi mili. Dobara login karo."
+              : "Holdings load nahi hui. Backend aur API URL check karo."
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-  fetchHoldings();
-}, []);
+    fetchHoldings();
+
+    const intervalId = setInterval(fetchHoldings, 10000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, []);
+
   const labels = allHoldings.map((stock) => stock.name);
 
   const data = {
@@ -34,15 +60,48 @@ const Holdings = () => {
     datasets: [
       {
         label: "Stock Price",
-        data: allHoldings.map((stock) => stock.price),
+        data: allHoldings.map((stock) => Number(stock.price) || 0),
         backgroundColor: "rgba(255, 99, 132, 0.5)",
       },
     ],
   };
 
+  const totalInvestment = allHoldings.reduce(
+    (total, stock) =>
+      total + (Number(stock.avg) || 0) * (Number(stock.qty) || 0),
+    0
+  );
+
+  const currentValue = allHoldings.reduce(
+    (total, stock) =>
+      total + (Number(stock.price) || 0) * (Number(stock.qty) || 0),
+    0
+  );
+
+  const profitLoss = currentValue - totalInvestment;
+
+  const profitPercentage =
+    totalInvestment > 0 ? (profitLoss / totalInvestment) * 100 : 0;
+
+  const money = (value) =>
+    value.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  if (loading) {
+    return <p>Holdings data load ho raha hai...</p>;
+  }
+
   return (
     <>
       <h3 className="title">Holdings ({allHoldings.length})</h3>
+
+      {error && (
+        <p style={{ color: "red", padding: "10px" }}>
+          {error}
+        </p>
+      )}
 
       <div className="order-table">
         <table>
@@ -53,7 +112,7 @@ const Holdings = () => {
               <th>Avg. cost</th>
               <th>LTP</th>
               <th>Cur. val</th>
-              <th>P&L</th>
+              <th>P&amp;L</th>
               <th>Net chg.</th>
               <th>Day chg.</th>
             </tr>
@@ -66,43 +125,49 @@ const Holdings = () => {
               const avg = Number(stock.avg) || 0;
               const curValue = price * qty;
               const profit = curValue - avg * qty;
-              const profClass = profit >= 0 ? "profit" : "loss";
-              const dayClass = stock.isLoss ? "loss" : "profit";
 
               return (
                 <tr key={stock._id || stock.name}>
                   <td>{stock.name}</td>
                   <td>{qty}</td>
-                  <td>{avg.toFixed(2)}</td>
-                  <td>{price.toFixed(2)}</td>
-                  <td>{curValue.toFixed(2)}</td>
-                  <td className={profClass}>{profit.toFixed(2)}</td>
-                  <td className={profClass}>{stock.net}</td>
-                  <td className={dayClass}>{stock.day}</td>
+                  <td>{money(avg)}</td>
+                  <td>{money(price)}</td>
+                  <td>{money(curValue)}</td>
+                  <td className={profit >= 0 ? "profit" : "loss"}>
+                    {money(profit)}
+                  </td>
+                  <td className={profit >= 0 ? "profit" : "loss"}>
+                    {stock.net ?? "—"}
+                  </td>
+                  <td className={stock.isLoss ? "loss" : "profit"}>
+                    {stock.day ?? "—"}
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
 
-        {allHoldings.length === 0 && (
-          <p>No holdings data found.</p>
+        {!error && allHoldings.length === 0 && (
+          <p>No holdings data found in the database.</p>
         )}
       </div>
 
       <div className="row">
         <div className="col">
-          <h5>29,875.<span>55</span></h5>
+          <h5>{money(totalInvestment)}</h5>
           <p>Total investment</p>
         </div>
 
         <div className="col">
-          <h5>31,428.<span>95</span></h5>
+          <h5>{money(currentValue)}</h5>
           <p>Current value</p>
         </div>
 
         <div className="col">
-          <h5>1,553.40 (+5.20%)</h5>
+          <h5 className={profitLoss >= 0 ? "profit" : "loss"}>
+            {money(profitLoss)} ({profitPercentage.toFixed(2)}%)
+          </h5>
           <p>P&amp;L</p>
         </div>
       </div>
